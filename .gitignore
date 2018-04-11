@@ -7,3 +7,7 @@ __pycache__/
 
 # .npy data (still too big for github, zip it)
 *.npy
+
+src/event*
+
+

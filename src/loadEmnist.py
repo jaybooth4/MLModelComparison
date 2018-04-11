@@ -26,6 +26,9 @@ def loadEmnistDatasetFromCSV(filename, imageCount, rowLength):
                 i += 1
     return data,labels
 
+def saveEmnistToNPY(data,filename):
+    np.save(filename,data)
+
 def loadEmnistFromNPY(filename):
     try:
         ret = np.load(filename)
@@ -36,6 +39,12 @@ def loadEmnistFromNPY(filename):
         ret = np.load(filename)
 
     return ret
+
+
+def intToFloat(intData):
+    floatData = intData.astype(float)
+    return floatData
+
 
 def printImg(data,rowSize,thresh):
     length = max(data.shape)
