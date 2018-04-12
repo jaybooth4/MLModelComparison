@@ -4,13 +4,12 @@ import tensorflow as tf
 import random
 
 imgWidth = 28
-layer1_size = 150
-layer2_size = 150
+layer1_size = 100
+layer2_size = 100
 num_classes = len(loadEmnist.enumToChar)
-#num_classes = 10
-EPOCHS = 10
+EPOCHS = 100
 BATCH_SIZE = 64
-LEARN_RATE = 0.9
+LEARN_RATE = 0.2
 
 trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
     #trainDat = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-train-data.npy')
@@ -24,6 +23,7 @@ testLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-labels.n
     #testLabels = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-test-labels.npy')
 testLabels = np.eye(num_classes,dtype=float)[testLabels.astype(int)]
 
+trainDataSize = trainDat.shape[0]
 def weight_var(shape):
     shape = tf.TensorShape(shape)
     initial_values = tf.random_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
@@ -32,6 +32,8 @@ def weight_var(shape):
 def bias_var(shape):
     initial_vals = tf.zeros(shape)
     return tf.Variable(initial_vals)
+
+
 
 # Placeholders
 inputs_ph = tf.placeholder(tf.float32, shape=[None,imgWidth*imgWidth]) # [784,]
@@ -49,57 +51,42 @@ w3 = weight_var([layer2_size,num_classes])  #[47, 24]
 b3 = bias_var([num_classes])
 
 # Network Structure
-## First Fully Connected Layer
+## First Fully Connected Layer (Could try different activation functions)
 a1 = tf.sigmoid(tf.add(tf.matmul(inputs_ph,w1), b1)) # [16,]
-## Second Fully Connected Layer
+## Second Fully Connected Layer (Could try different activation functions)
 a2 = tf.sigmoid(tf.add(tf.matmul(a1,w2), b2)) # [24,]
-## Output Layer
+## Output Layer (Could try adding activation function)
 #outputs = tf.sigmoid(tf.matmul(a2,w3) + b3) # [47,]
 outputs = tf.add(tf.matmul(a2,w3), b3)
-output = tf.argmax(outputs,1)
+
+#Loss to minimize (could try different loss function)
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=targets_ph, logits=outputs))
 #loss = tf.losses.mean_squared_error(outputs, targets_ph)
-#loss = tf.reduce_mean(
-#    tf.nn.softmax_cross_entropy_with_logits(logits=outputs, labels=tf.one_hot(targets_ph,num_classes))
-#)
+
 accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(outputs,1),tf.argmax(targets_ph,1)),dtype=tf.float32))
 
+# Optimizer to minimize loss. Could try different optimizer as well as varying the learning rate
 optimizer = tf.train.GradientDescentOptimizer(LEARN_RATE).minimize(loss, var_list=[w1,b1,w3,b3])
 
-# saver to save and later restore state
+# saver to save and later restore state (don't know how to restore yet)
 saver = tf.train.Saver()
 
+# Saves event logs
 writer = tf.summary.FileWriter('.')
 writer.add_graph(tf.get_default_graph())
 
-test = 0
 
-if test ==1:
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    for i in range(EPOCHS):
+        print('EPOCH ' + str(i))
+        index = random.sample(range(trainDataSize),k=trainDataSize)
+        tot = 0
+        for j in range(0,trainDataSize,BATCH_SIZE):
+            _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]]} ) 
+            tot += min(j+BATCH_SIZE,trainDataSize-1) - j + 1
+        print(sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels}))
+        save_path = saver.save(sess, "./model/model.ckpt")
+        print("Model saved in path: %s" % save_path)
 
-        for i in range(0,5000):
-            sess.run(optimizer, feed_dict={inputs_ph: trainDat[0:BATCH_SIZE], targets_ph: trainLabels[0:BATCH_SIZE]})
-            a,b,c = sess.run([outputs,output,accuracy], feed_dict={inputs_ph: trainDat[0:100], targets_ph: trainLabels[0:100]})
-            print("\ni="+str(i))
-            #print(a)
-            print(b)
-            print(c)
-
-else:
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        idxs = range(trainDat.shape[0])
-        print("idxs length is " + str(len(idxs)))
-        for i in range(EPOCHS):
-            print('EPOCH ' + str(i))
-            for j in range(0,len(idxs),BATCH_SIZE):
-            #for j in range(0,100*BATCH_SIZE,BATCH_SIZE):
-                _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[j:j+min(j+BATCH_SIZE, len(idxs))],   targets_ph: trainLabels[j:j+min(j+BATCH_SIZE, len(idxs))]} )
-                #print(str(j) + " Acc = " + str(acc))
-                if j % 640 == 0:
-                    print(str(acc))
-            print(sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels}))
-            save_path = saver.save(sess, "./model/model.ckpt")
-            print("Model saved in path: %s" % save_path)
 
