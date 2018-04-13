@@ -4,20 +4,29 @@ import tensorflow as tf
 import random
 
 imgWidth = 28
-layer1_size = 100
+layer1_size = 1024
 layer2_size = 100
 num_classes = len(loadEmnist.enumToChar)
 EPOCHS = 100
 BATCH_SIZE = 64
 LEARN_RATE = 0.2
+FILTER_SIZE = 5
+NUM_FILTERS = 32
+FILTER_SIZE1 = 5
+FILTER_SIZE2 = 5
+NUM_FILTERS1 = 32
+NUM_FILTERS2 = 64
+DROP_RATE = 0.5
 
 trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
+trainDat = trainDat.reshape([trainDat.shape[0],imgWidth,imgWidth,1])
     #trainDat = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-train-data.npy')
 trainLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-labels.npy')
     #trainLabels = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-train-labels.npy')
 trainLabels = np.eye(num_classes,dtype=float)[trainLabels.astype(int)]
 
 testDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-data.npy')
+testDat = testDat.reshape([testDat.shape[0],imgWidth,imgWidth,1])
     #testDat = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-test-data.npy')
 testLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-labels.npy')
     #testLabels = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-test-labels.npy')
@@ -26,38 +35,65 @@ testLabels = np.eye(num_classes,dtype=float)[testLabels.astype(int)]
 trainDataSize = trainDat.shape[0]
 def weight_var(shape):
     shape = tf.TensorShape(shape)
-    initial_values = tf.random_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
+    initial_values = tf.truncated_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
     return tf.Variable(initial_values)
 
 def bias_var(shape):
-    initial_vals = tf.zeros(shape)
+    initial_vals = tf.constant(0.1,shape=shape)
     return tf.Variable(initial_vals)
 
+def conv_2d_layer(x,w,b,activationFn):
+    layer = tf.nn.conv2d(x,w,strides=[1,1,1,1], padding='SAME')
+    if activationFn == 'relu':
+      return tf.nn.relu(tf.add(layer,b))
+    else:
+      return tf.add(layer,b)
 
+def max_pool_NxN(x,reduction_factor):
+    return tf.nn.max_pool(x, ksize=[1,reduction_factor,reduction_factor,1], strides=[1,reduction_factor,reduction_factor,1],padding='SAME')
 
 # Placeholders
-inputs_ph = tf.placeholder(tf.float32, shape=[None,imgWidth*imgWidth]) # [784,]
+inputs_ph = tf.placeholder(tf.float32, shape=[None,imgWidth,imgWidth,1]) # [784,]
 targets_ph = tf.placeholder(tf.float32, shape=[None,num_classes]) # [47]
+retain_prob = tf.placeholder(tf.float32)
 
 # Variables
-## First Fully Connected Layer
-w1 = weight_var([inputs_ph.shape[1],layer1_size]) #[16,784]
+## Convolutional layer 1
+conv_w1 = weight_var([FILTER_SIZE1,FILTER_SIZE1,1,NUM_FILTERS1])
+conv_b1 = bias_var([NUM_FILTERS1])
+## Convolutional layer 2
+conv_w2 = weight_var([FILTER_SIZE2, FILTER_SIZE2,NUM_FILTERS1,NUM_FILTERS2])
+conv_b2 = bias_var([NUM_FILTERS2])
+## First Fully Connected 
+w1 = weight_var([7*7*NUM_FILTERS2,layer1_size]) #[16,784]
 b1 = bias_var([layer1_size])
 ## Second Fully Connected Layer
-w2 = weight_var([layer1_size,layer2_size])  #[24,16]
-b2 = bias_var([layer2_size])
+    #w2 = weight_var([layer1_size,layer2_size])  #[24,16]
+    #b2 = bias_var([layer2_size])
 ## Output Layer
-w3 = weight_var([layer2_size,num_classes])  #[47, 24]
+w3 = weight_var([layer1_size,num_classes])  #[47, 24]
 b3 = bias_var([num_classes])
 
 # Network Structure
+## First Convolutional Layer
+conv_layer_1 = conv_2d_layer(inputs_ph,conv_w1,conv_b1,'relu')
+max_pool_1 = max_pool_NxN(conv_layer_1,2)
+## Second Convolutional Layer
+conv_layer_2 = conv_2d_layer(max_pool_1,conv_w2,conv_b2,'relu')
+max_pool_2 = max_pool_NxN(conv_layer_2,2)
+
+#dropout = tf.nn.dropout(max_pool_2, retain_prob)
+
+  ### Convert to vector
+FCL_Input = tf.reshape(max_pool_2, [-1,7*7*NUM_FILTERS2])
 ## First Fully Connected Layer (Could try different activation functions)
-a1 = tf.sigmoid(tf.add(tf.matmul(inputs_ph,w1), b1)) # [16,]
+a1 = tf.nn.relu(tf.add(tf.matmul(FCL_Input,w1), b1)) # [16,]
 ## Second Fully Connected Layer (Could try different activation functions)
-a2 = tf.sigmoid(tf.add(tf.matmul(a1,w2), b2)) # [24,]
+#a2 = tf.nn.relu(tf.add(tf.matmul(a1,w2), b2)) # [24,]
+
 ## Output Layer (Could try adding activation function)
 #outputs = tf.sigmoid(tf.matmul(a2,w3) + b3) # [47,]
-outputs = tf.add(tf.matmul(a2,w3), b3)
+outputs = tf.add(tf.matmul(a1,w3), b3)
 
 #Loss to minimize (could try different loss function)
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=targets_ph, logits=outputs))
@@ -83,9 +119,10 @@ with tf.Session() as sess:
         index = random.sample(range(trainDataSize),k=trainDataSize)
         tot = 0
         for j in range(0,trainDataSize,BATCH_SIZE):
-            _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]]} ) 
+            _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]]})#, retain_prob: 1-DROP_RATE} ) 
             tot += min(j+BATCH_SIZE,trainDataSize-1) - j + 1
-        print(sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels}))
+        # Test accuracy on test dataset (no dropout - use all features)
+        print(sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels}))#, retain_prob: 1.0}))
         save_path = saver.save(sess, "./model/model.ckpt")
         print("Model saved in path: %s" % save_path)
 
