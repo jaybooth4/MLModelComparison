@@ -102,7 +102,7 @@ loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=targets_
 accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(outputs,1),tf.argmax(targets_ph,1)),dtype=tf.float32))
 
 # Optimizer to minimize loss. Could try different optimizer as well as varying the learning rate
-optimizer = tf.train.GradientDescentOptimizer(LEARN_RATE).minimize(loss, var_list=[w1,b1,w3,b3])
+optimizer = tf.train.GradientDescentOptimizer(LEARN_RATE).minimize(loss, var_list=[w1,b1,w3,b3],global_step=tf.train.get_global_step())
 
 # saver to save and later restore state (don't know how to restore yet)
 saver = tf.train.Saver()
