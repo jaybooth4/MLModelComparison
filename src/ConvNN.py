@@ -9,7 +9,7 @@ layer2_size = 100
 num_classes = len(loadEmnist.enumToChar)
 EPOCHS = 100
 BATCH_SIZE = 64
-LEARN_RATE = 0.2
+LEARN_RATE = 0.0001
 FILTER_SIZE = 5
 NUM_FILTERS = 32
 FILTER_SIZE1 = 5
@@ -52,12 +52,12 @@ def conv_2d_layer(x,w,b,activationFn):
 def max_pool_NxN(x,reduction_factor):
     return tf.nn.max_pool(x, ksize=[1,reduction_factor,reduction_factor,1], strides=[1,reduction_factor,reduction_factor,1],padding='SAME')
 
-# Placeholders
+# Placeholders (placeholders that we will feed with values during training)
 inputs_ph = tf.placeholder(tf.float32, shape=[None,imgWidth,imgWidth,1]) # [784,]
 targets_ph = tf.placeholder(tf.float32, shape=[None,num_classes]) # [47]
 retain_prob = tf.placeholder(tf.float32)
 
-# Variables
+# Variables (weights that will be adjusted by the minimize() function)
 ## Convolutional layer 1
 conv_w1 = weight_var([FILTER_SIZE1,FILTER_SIZE1,1,NUM_FILTERS1])
 conv_b1 = bias_var([NUM_FILTERS1])
@@ -82,10 +82,10 @@ max_pool_1 = max_pool_NxN(conv_layer_1,2)
 conv_layer_2 = conv_2d_layer(max_pool_1,conv_w2,conv_b2,'relu')
 max_pool_2 = max_pool_NxN(conv_layer_2,2)
 
-#dropout = tf.nn.dropout(max_pool_2, retain_prob)
+dropout = tf.nn.dropout(max_pool_2, retain_prob)
 
   ### Convert to vector
-FCL_Input = tf.reshape(max_pool_2, [-1,7*7*NUM_FILTERS2])
+FCL_Input = tf.reshape(dropout, [-1,7*7*NUM_FILTERS2])
 ## First Fully Connected Layer (Could try different activation functions)
 a1 = tf.nn.relu(tf.add(tf.matmul(FCL_Input,w1), b1)) # [16,]
 ## Second Fully Connected Layer (Could try different activation functions)
@@ -102,7 +102,7 @@ loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=targets_
 accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(outputs,1),tf.argmax(targets_ph,1)),dtype=tf.float32))
 
 # Optimizer to minimize loss. Could try different optimizer as well as varying the learning rate
-optimizer = tf.train.GradientDescentOptimizer(LEARN_RATE).minimize(loss, var_list=[w1,b1,w3,b3],global_step=tf.train.get_global_step())
+optimizer = tf.train.AdamOptimizer(LEARN_RATE).minimize(loss, var_list=[conv_w1, conv_b1, conv_w2, conv_b2,w1,b1,w3,b3])
 
 # saver to save and later restore state (don't know how to restore yet)
 saver = tf.train.Saver()
@@ -119,10 +119,11 @@ with tf.Session() as sess:
         index = random.sample(range(trainDataSize),k=trainDataSize)
         tot = 0
         for j in range(0,trainDataSize,BATCH_SIZE):
-            _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]]})#, retain_prob: 1-DROP_RATE} ) 
+            _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]], retain_prob: 1-DROP_RATE} ) 
             tot += min(j+BATCH_SIZE,trainDataSize-1) - j + 1
+        #    print("\tAccuracy on traindat: " + str(acc))
         # Test accuracy on test dataset (no dropout - use all features)
-        print(sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels}))#, retain_prob: 1.0}))
+        print(sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels, retain_prob: 1.0}))
         save_path = saver.save(sess, "./model/model.ckpt")
         print("Model saved in path: %s" % save_path)
 
