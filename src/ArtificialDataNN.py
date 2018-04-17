@@ -2,17 +2,22 @@ import numpy as np
 import tensorflow as tf
 import random
 import generate_data as gd
+import matplotlib.pyplot as plt
 
 imgWidth = 28
 layer1_size = 1
 #layer2_size = 100
 num_classes = 2
-EPOCHS = 50
+EPOCHS = 2000
 BATCH_SIZE = 64
-LEARN_RATE = 0.1
+LEARN_RATE = 0.01
 nDims = 2
 
-trainDat, testDat, trainLabels, testLabels = gd.generate_data()
+inmeans = [[0,0],[2,2],[0,2]]
+incovs = [[[1,0],[0,1]],[[1,0],[0,1]],[[1,0],[0,1]]]
+datasize = 1000
+
+trainDat, testDat, trainLabels, testLabels = gd.generate_data(inmeans, incovs, datasize)
 trainLabels = trainLabels - 1
 testLabels = testLabels - 1
 trainLabels = np.eye(num_classes)[trainLabels.astype(int)]
@@ -68,6 +73,8 @@ optimizer = tf.train.GradientDescentOptimizer(LEARN_RATE).minimize(loss, var_lis
 saver = tf.train.Saver()
 
 # Saves event logs
+acc_report = tf.summary.scalar('accuracy',accuracy)
+
 writer = tf.summary.FileWriter('./log')
 writer.add_graph(tf.get_default_graph())
 
@@ -80,7 +87,10 @@ with tf.Session() as sess:
         for j in range(0,trainDataSize,BATCH_SIZE):
             _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]]} ) 
             print(str(acc))
-        print(sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels}))
+        acc_rep,l,a = sess.run([acc_report,loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels})
+        writer.add_summary(acc_rep,i)
+        print(l)
+        print(a)
         save_path = saver.save(sess, "./model/model.ckpt")
         print("Model saved in path: %s" % save_path)
 
