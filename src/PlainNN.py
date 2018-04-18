@@ -2,91 +2,104 @@ import loadEmnist
 import numpy as np
 import tensorflow as tf
 import random
+import NN_Helpers as nnh
+import matplotlib.pyplot as plt
 
 imgWidth = 28
-layer1_size = 100
-layer2_size = 100
+#layer1_size = 10
 num_classes = len(loadEmnist.enumToChar)
 EPOCHS = 100
 BATCH_SIZE = 64
-LEARN_RATE = 0.2
-
+LEARN_RATE = 0.001
+SMOOTHING_WINDOW = 10 # Number of previous epoch accuracies to consider when deciding whether to stop
+master_accuracy_lst = [] # This will store the accuracy at each epoch
+num_neurons = [1,5]
+# Load Data
 trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
-    #trainDat = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-train-data.npy')
 trainLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-labels.npy')
-    #trainLabels = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-train-labels.npy')
 trainLabels = np.eye(num_classes,dtype=float)[trainLabels.astype(int)]
-
 testDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-data.npy')
-    #testDat = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-test-data.npy')
 testLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-labels.npy')
-    #testLabels = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-test-labels.npy')
 testLabels = np.eye(num_classes,dtype=float)[testLabels.astype(int)]
 
 trainDataSize = trainDat.shape[0]
+
+# Function to generate tensorflow weight variable
 def weight_var(shape):
     shape = tf.TensorShape(shape)
     initial_values = tf.random_normal(shape, mean=0.0, stddev=0.1, dtype=tf.float32)
     return tf.Variable(initial_values)
 
+# Function to generate tensorflow bias variable
 def bias_var(shape):
     initial_vals = tf.zeros(shape)
     return tf.Variable(initial_vals)
 
 
+for iteration in range(len(num_neurons)):
+    accuracy_lst = [] # this will store the accuracy at each epoch
 
-# Placeholders
-inputs_ph = tf.placeholder(tf.float32, shape=[None,imgWidth*imgWidth]) # [784,]
-targets_ph = tf.placeholder(tf.float32, shape=[None,num_classes]) # [47]
+    layer1_size = num_neurons[iteration]
 
-# Variables
-## First Fully Connected Layer
-w1 = weight_var([inputs_ph.shape[1],layer1_size]) #[16,784]
-b1 = bias_var([layer1_size])
-## Second Fully Connected Layer
-w2 = weight_var([layer1_size,layer2_size])  #[24,16]
-b2 = bias_var([layer2_size])
-## Output Layer
-w3 = weight_var([layer2_size,num_classes])  #[47, 24]
-b3 = bias_var([num_classes])
+    ############### Placeholders ##############################
+    #  We will feed these with inputs at train/test timeinputs_ph = tf.placeholder(tf.float32, shape=[None,imgWidth*imgWidth]) # [784,]
+    inputs_ph = tf.placeholder(tf.float32, shape=[None,imgWidth*imgWidth]) # [784,]
+    targets_ph = tf.placeholder(tf.float32, shape=[None,num_classes]) # [47]
 
-# Network Structure
-## First Fully Connected Layer (Could try different activation functions)
-a1 = tf.sigmoid(tf.add(tf.matmul(inputs_ph,w1), b1)) # [16,]
-## Second Fully Connected Layer (Could try different activation functions)
-a2 = tf.sigmoid(tf.add(tf.matmul(a1,w2), b2)) # [24,]
-## Output Layer (Could try adding activation function)
-#outputs = tf.sigmoid(tf.matmul(a2,w3) + b3) # [47,]
-outputs = tf.add(tf.matmul(a2,w3), b3)
+    ############### Tensorflow Variables ######################
+    # -- These are the values that the optimizer function will adjust during training
+        ## Vars for First Fully Connected Layer
+    w1 = weight_var([inputs_ph.shape[1],layer1_size]) #[16,784]
+    b1 = bias_var([layer1_size])
 
-#Loss to minimize (could try different loss function)
-loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=targets_ph, logits=outputs))
-#loss = tf.losses.mean_squared_error(outputs, targets_ph)
+        ## Vars for Output Layer
+    w2 = weight_var([layer1_size,num_classes])  #[47, 24]
+    b2 = bias_var([num_classes])
 
-accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(outputs,1),tf.argmax(targets_ph,1)),dtype=tf.float32))
+    ############### Network Structure ########################
+    ## First Fully Connected Layer (Could try different activation functions)
+    a1 = tf.sigmoid(tf.add(tf.matmul(inputs_ph,w1), b1)) # [16,]
 
-# Optimizer to minimize loss. Could try different optimizer as well as varying the learning rate
-optimizer = tf.train.GradientDescentOptimizer(LEARN_RATE).minimize(loss, var_list=[w1,b1,w3,b3])
+    ## Second Fully Connected Layer (Could try using activation functions)
+    outputs = tf.add(tf.matmul(a1,w2), b2)
 
-# saver to save and later restore state (don't know how to restore yet)
-saver = tf.train.Saver()
+    ############### Tensorflow Operations ####################
+    ## We will use these to evaluate and train the neural network
+    # Loss function to minimize
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=targets_ph, logits=outputs))
 
-# Saves event logs
-writer = tf.summary.FileWriter('./log')
-writer.add_graph(tf.get_default_graph())
+    # Prediction: Takes argmax of output layer to choose the most probable classification of the input
+    prediction = tf.argmax(outputs,1)
 
+    # Percent of predictions correct
+    accuracy = tf.reduce_mean(tf.cast(tf.equal(prediction,tf.argmax(targets_ph,1)),dtype=tf.float32))
 
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    for i in range(EPOCHS):
-        print('EPOCH ' + str(i))
-        index = random.sample(range(trainDataSize),k=trainDataSize)
-        tot = 0
-        for j in range(0,trainDataSize,BATCH_SIZE):
-            _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]]} ) 
-            tot += min(j+BATCH_SIZE,trainDataSize-1) - j + 1
-        print(sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels}))
-        save_path = saver.save(sess, "./model/model.ckpt")
-        print("Model saved in path: %s" % save_path)
+    # Optimizer to minimize loss. Could try different optimizer as well as varying the learning rate
+    optimizer = tf.train.AdamOptimizer(LEARN_RATE).minimize(loss, var_list=[w1,b1,w2,b2])
 
+    ############### Training / Validation Loop ################
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        for i in range(EPOCHS):
+            index = random.sample(range(trainDataSize),k=trainDataSize)
+            for j in range(0,trainDataSize,BATCH_SIZE):
+                _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]]} ) 
+            l,a = sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels})
+            print('EPOCH ' + str(i) + ": "+ str(a))
+            accuracy_lst.append(acc)
+            if (i > 5*SMOOTHING_WINDOW):
+                if nnh.finished_training(accuracy_lst,SMOOTHING_WINDOW) == True:
+                    break
+    master_accuracy_lst.append((layer1_size,accuracy_lst))
+    print(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a))
 
+for lst in master_accuracy_lst:
+    plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))
+    print(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
+
+plt.xlabel('Epoch #')
+plt.ylabel('Accuracy %')
+plt.title('Training Curves')
+plt.legend(loc='lower right')
+plt.savefig('train_plot.png')
+plt.show()
