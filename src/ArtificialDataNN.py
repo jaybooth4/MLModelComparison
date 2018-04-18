@@ -92,8 +92,8 @@ for iteration in range(len(num_neurons)):
             for j in range(0,trainDataSize,BATCH_SIZE):
                 _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]]} ) 
             l,a = sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels})
-            with open('log.out','a') as logfile:
-                logfile.write("Epoch "+ str(i) + ": "+ str(a)+"\n")
+            #with open('log.out','a') as logfile:
+             #   logfile.write("Epoch "+ str(i) + ": "+ str(a)+"\n")
             print('EPOCH ' + str(i) + ": " + str(a))
             accuracy_lst.append(a)
             if (i > 5*SMOOTHING_WINDOW):
@@ -105,6 +105,8 @@ for iteration in range(len(num_neurons)):
 for lst in master_accuracy_lst:
     plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))
     print(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
+    with open('log.out','a') as logfile:
+        logfile.write(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '\n')
 
 plt.xlabel('Epoch #')
 plt.ylabel('Accuracy %')

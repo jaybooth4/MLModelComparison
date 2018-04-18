@@ -96,7 +96,8 @@ for iteration in range(len(num_neurons)):
 for lst in master_accuracy_lst:
     plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))
     print(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
-
+    with open('log.out','a') as logfile:
+        logfile.write(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '\n')
 plt.xlabel('Epoch #')
 plt.ylabel('Accuracy %')
 plt.title('Training Curves')
