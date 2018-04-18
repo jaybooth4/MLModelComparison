@@ -10,10 +10,10 @@ imgWidth = 28
 num_classes = len(loadEmnist.enumToChar)
 EPOCHS = 100
 BATCH_SIZE = 64
-LEARN_RATE = 0.001
+LEARN_RATE = 0.01
 SMOOTHING_WINDOW = 10 # Number of previous epoch accuracies to consider when deciding whether to stop
 master_accuracy_lst = [] # This will store the accuracy at each epoch
-num_neurons = [1,5]
+num_neurons = [50, 100, 200, 400, 800]
 # Load Data
 trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
 trainLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-labels.npy')
