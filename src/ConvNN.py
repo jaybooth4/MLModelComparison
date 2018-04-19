@@ -1,7 +1,11 @@
+import matplotlib
+matplotlib.use('Agg') 
 import loadEmnist
 import numpy as np
 import tensorflow as tf
 import random
+import NN_Helpers as nnh
+import matplotlib.pyplot as plt
 
 imgWidth = 28
 num_classes = len(loadEmnist.enumToChar)
@@ -15,6 +19,7 @@ FILTER_SIZE2 = 5
 NUM_FILTERS1 = 32
 NUM_FILTERS2 = 64
 DROP_RATE = 0.5
+SMOOTHING_WINDOW = 30
 master_accuracy_lst = []
 num_neurons = [10,20,40,80]
 
@@ -129,6 +134,8 @@ for iteration in range(len(num_neurons)):
 
     master_accuracy_lst.append((layer1_size,accuracy_lst))
     print(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a))
+
+
 for lst in master_accuracy_lst:
     plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))
     print(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
@@ -138,4 +145,4 @@ plt.xlabel('Epoch #')
 plt.ylabel('Accuracy %')
 plt.title('Training Curves')
 plt.legend(loc='lower right')
-plt.savefig('train_plot.png')
+plt.savefig('2L_Conv_train_plot.png')
