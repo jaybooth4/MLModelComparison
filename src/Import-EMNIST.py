@@ -3,103 +3,6 @@
 
 # In[6]:
 
-
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-from sklearn import svm
-from sklearn import neighbors
-from sklearn import naive_bayes
-from sklearn import neural_network
-import time
-import matplotlib.pyplot as plt
-from pympler import asizeof
-import numpy as np
-np.random.seed(1)
-
-
-# In[7]:
-
-
-def fitModel(model, trainingData, trainingLabels):
-    startMemory = asizeof.asizeof(model)
-    startTime = time.time()
-    model.fit(trainingData, trainingLabels)
-    endTime = time.time()
-    endMemory = asizeof.asizeof(model)
-    print("Time to fit: " + str(endTime - startTime))
-    print("Memory growth fit: " + str(endMemory - startMemory))
-
-
-# In[8]:
-
-
-def predictModel(model, testData):
-    startTime = time.time()
-    predictions = model.predict(testData)
-    endTime = time.time()
-    print("Time to predict " + str(endTime - startTime))
-    return predictions
-
-
-# In[9]:
-
-
-def runOnModelAndData(model, dataTrain, dataTest, labelsTrain, labelsTest):
-    fitModel(model, dataTrain, labelsTrain)
-    predictions = predictModel(model, dataTest)
-    accuracy = accuracy_score(labelsTest.tolist(), predictions)
-    print(accuracy)
-    #plotBoundary(model, dataTrain, labelsTrain)
-
-
-# In[10]:
-
-
-def KNNModel():
-    return neighbors.KNeighborsClassifier()
-    #return neighbors.KNeighborsClassifier(algorithm='brute', weights='distance')
-
-
-# In[11]:
-
-
-def NBModel():
-    return naive_bayes.GaussianNB()
-
-
-# In[12]:
-
-
-def SVMModel(modelType):
-    if modelType == 'linear':
-        return svm.SVC(kernel='linear')
-    elif modelType == 'rbf':
-        return svm.SVC(kernel='rbf', C=1000, gamma = 1)
-    else:
-        raise RuntimeError('Model must be of type linear or rbf')
-
-
-# In[13]:
-
-
-def NNModel(modelType):
-    if modelType == 'simple':
-        return neural_network.MLPClassifier(hidden_layer_sizes=(10, 10))
-    elif modelType == 'complex':
-        return neural_network.MLPClassifier(hidden_layer_sizes=(20, 20, 20, 20, 20, 20), alpha=0, solver='lbfgs', max_iter=1500)
-    else:
-        raise RuntimeError('Model must be of type linear or rbf')
-
-
-# In[ ]:
-
-
-runOnModelAndData(KNNModel(), EMtrainDat, EMtestDat, EMtrainLabels, EMtestLabels)
-
-
-# In[14]:
-
-
 import csv
 import numpy as np
 import os, zipfile
@@ -173,8 +76,8 @@ def printImg(data,rowSize,thresh):
 #testDat, testLabels = loadEmnist.loadEmnistDataset('../data/EMNIST/emnist-balanced-test.csv',18800,28)
 
 # Read in EMNIST train data from .npy
-EMtrainDat = loadEmnistFromNPY('balanced-train-data.npy')
-EMtrainLabels = loadEmnistFromNPY('balanced-train-data.npy')
+EMtrainDat = loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
+EMtrainLabels = loadEmnistFromNPY('../data/EMNIST/balanced-train-labels.npy')
 
 # Read in EMNIST train dataset from CSV
 # testDat: np.ndarray[112800][28*28]
@@ -182,28 +85,8 @@ EMtrainLabels = loadEmnistFromNPY('balanced-train-data.npy')
 # trainDat, trainLabels = loadEmnist.loadEmnistDataset('../data/EMNIST/emnist-balanced-train.csv', 112800,28)
 
 # Read in EMNIST test data from .npy
-EMtestDat = loadEmnistFromNPY('balanced-test-data.npy')
-EMtestLabels = loadEmnistFromNPY('balanced-test-labels.npy')
-
-# Print first 10 of test dataset digits to terminal
-for i in range(0,10):
-    print('Character: ' + enumToChar[EMtestLabels[i]])
-    printImg(EMtestDat[i][:],28,128)
-
-
-# In[18]:
-
-
-EMtrainDat.shape
-
-
-# In[21]:
-
-
-RSelect
-
-
-# In[24]:
+EMtestDat = loadEmnistFromNPY('../data/EMNIST/balanced-test-data.npy')
+EMtestLabels = loadEmnistFromNPY('../data/EMNIST/balanced-test-labels.npy')
 
 
 RSelect=np.random.choice(112800,100)
@@ -212,4 +95,109 @@ count =0
 for index in RSelect:
     SampleData[count]=EMtrainDat[index]
     count = count+1
+
+
+
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn import svm
+from sklearn import neighbors
+from sklearn import naive_bayes
+from sklearn import neural_network
+import time
+import matplotlib.pyplot as plt
+from pympler import asizeof
+import numpy as np
+np.random.seed(1)
+
+save_file = "sklearn_results.txt"
+# In[7]:
+
+
+def fitModel(model, trainingData, trainingLabels):
+    startMemory = asizeof.asizeof(model)
+    startTime = time.time()
+    model.fit(trainingData, trainingLabels)
+    endTime = time.time()
+    endMemory = asizeof.asizeof(model)
+    print("Time to fit: " + str(endTime - startTime))
+    print("Memory growth fit: " + str(endMemory - startMemory))
+    with open(save_file,'a') as f:
+        f.write('\n\tTime to fit: ' + str(endTime - startTime))
+        f.write('\n\tMemory growth fit: ' + str(endMemory - startMemory))
+
+
+# In[8]:
+
+
+def predictModel(model, testData):
+    startTime = time.time()
+    predictions = model.predict(testData)
+    endTime = time.time()
+    print("Time to predict " + str(endTime - startTime))
+    return predictions
+
+
+# In[9]:
+
+
+def runOnModelAndData(_model, dataTrain, dataTest, labelsTrain, labelsTest):
+    model = _model()
+    with open(save_file, 'a') as f:
+        f.write('\nResults for ' + str(_model.__name__) + ':')
+    fitModel(model, dataTrain, labelsTrain)
+    predictions = predictModel(model, dataTest)
+    accuracy = accuracy_score(labelsTest.tolist(), predictions)
+    print(accuracy)
+    with open(save_file, 'a') as f:
+        f.write('\n\tAccuracy: ' + str(accuracy))
+    #plotBoundary(model, dataTrain, labelsTrain)
+
+
+# In[10]:
+
+
+def KNNModel():
+    return neighbors.KNeighborsClassifier(n_jobs=-1)
+    #return neighbors.KNeighborsClassifier(algorithm='brute', weights='distance')
+
+
+# In[11]:
+
+
+def NBModel():
+    return naive_bayes.GaussianNB()
+
+# In[12]:
+
+
+def SVMModel_linear(modelType):
+    return svm.SVC(kernel='linear')
+
+def SVMModel_rbf(modelType):
+    return svm.SVC(kernel='rbf', C=1000, gamma = 1)
+
+
+
+# In[13]:
+
+
+def NNModel(modelType):
+    if modelType == 'simple':
+        return neural_network.MLPClassifier(hidden_layer_sizes=(10, 10))
+    elif modelType == 'complex':
+        return neural_network.MLPClassifier(hidden_layer_sizes=(20, 20, 20, 20, 20, 20), alpha=0, solver='lbfgs', max_iter=1500)
+    else:
+        raise RuntimeError('Model must be of type linear or rbf')
+
+
+# In[ ]:
+
+model_list = [KNNModel, NBModel, SVMModel_linear, SVMModel_rbf]
+
+for m in model_list:
+    runOnModelAndData(m, EMtrainDat, EMtestDat, EMtrainLabels, EMtestLabels)
+
+
+# In[14]:
 
