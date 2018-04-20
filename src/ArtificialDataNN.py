@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
 import numpy as np
 import tensorflow as tf
 import random
@@ -113,4 +115,4 @@ plt.ylabel('Accuracy %')
 plt.title('Training Curves')
 plt.legend(loc='lower right')
 plt.savefig('train_plot.png')
-plt.show()
+#plt.show()

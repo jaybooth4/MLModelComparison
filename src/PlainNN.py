@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg') # Don't use Xwindows backend
 import loadEmnist
 import numpy as np
 import tensorflow as tf
@@ -8,10 +10,10 @@ import matplotlib.pyplot as plt
 imgWidth = 28
 #layer1_size = 10
 num_classes = len(loadEmnist.enumToChar)
-EPOCHS = 100
+EPOCHS = 500
 BATCH_SIZE = 64
-LEARN_RATE = 0.01
-SMOOTHING_WINDOW = 10 # Number of previous epoch accuracies to consider when deciding whether to stop
+LEARN_RATE = 0.0001
+SMOOTHING_WINDOW = 30 # Number of previous epoch accuracies to consider when deciding whether to stop
 master_accuracy_lst = [] # This will store the accuracy at each epoch
 num_neurons = [50, 100, 200, 400, 800]
 # Load Data
@@ -98,9 +100,9 @@ for lst in master_accuracy_lst:
     print(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
     with open('log.out','a') as logfile:
         logfile.write(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '\n')
-plt.xlabel('Epoch #')
+plt.xlabel('Epoch ')
 plt.ylabel('Accuracy %')
 plt.title('Training Curves')
 plt.legend(loc='lower right')
 plt.savefig('train_plot.png')
-plt.show()
+#plt.show()
