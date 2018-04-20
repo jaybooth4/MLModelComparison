@@ -7,16 +7,16 @@ import matplotlib.pyplot as plt
 
 imgWidth = 28
 #layer1_size = 1
-EPOCHS = 500 # Number of times to train on the entire sample data
+EPOCHS = 20000 # Number of times to train on the entire sample data
 BATCH_SIZE = 64 # Number of samples to process for each optimization step
-LEARN_RATE = 0.01 # Learning rate parameter for the optimization function
-SMOOTHING_WINDOW = 20 # Number of previous epoch accuracies to consider when deciding whether to stop
+LEARN_RATE = 0.0005 # Learning rate parameter for the optimization function
+SMOOTHING_WINDOW = 200 # Number of previous epoch accuracies to consider when deciding whether to stop
 master_accuracy_lst = [] # This will store the accuracy at each epoch for all iterations
-num_neurons = [1,11,21,31,41] # We will test the NN with each of these number of Hidden Layer Neurons
+num_neurons = [1,11,21,31,41,51] # We will test the NN with each of these number of Hidden Layer Neurons
 
 # Set artificial data parameters
-inmeans = [[0,0],[2,2]]
-incovs = [[[1,0],[0,1]],[[1,0],[0,1]]]
+inmeans = [[0,0,0],[0,0,1]]
+incovs = [[[1,0,0],[0,1,0], [0,0,1]],   [[1,0,0],[0,1,0],[0,0,1]]]
 datasize = 1000
 
 # Generate Data
@@ -45,7 +45,7 @@ def bias_var(shape):
 
 for iteration in range(len(num_neurons)):
     accuracy_lst = [] # This will store the accuracy at each epoch
-
+    train_accuracy_lst = []
     layer1_size = num_neurons[iteration]
     ############### Placeholders ##############################
     #  We will feed these with inputs at train/test time
@@ -57,17 +57,21 @@ for iteration in range(len(num_neurons)):
         ## Vars for First Fully Connected Layer
     w1 = weight_var([inputs_ph.shape[1],layer1_size])
     b1 = bias_var([layer1_size])
-        ## Vars for Output Layer
-    w2 = weight_var([layer1_size,num_classes])
-    b2 = bias_var([num_classes])
-
-
+        ## Vars for second hidden layer
+    w2 = weight_var([layer1_size,layer1_size])
+    b2 = bias_var([layer1_size])
+        ## Vars for output layer
+    w3 = weight_var([layer1_size,num_classes])
+    b3 = bias_var([num_classes])
     ############### Network Structure ########################
     ## First Fully Connected Layer (Could try different activation functions)
     a1 = tf.sigmoid(tf.add(tf.matmul(inputs_ph,w1), b1))
 
+    ## Second Fully Connected Layer (Could try different activation functions)
+    a2 = tf.sigmoid(tf.add(tf.matmul(a1,w2), b2))
+
     ## Second Fully Connected Layer (Could try using activation functions)
-    outputs = tf.add(tf.matmul(a1,w2), b2)
+    outputs = tf.add(tf.matmul(a2,w3), b3)
 
     ############### Tensorflow Operations ####################
     ## We will use these to evaluate and train the neural network
@@ -81,7 +85,7 @@ for iteration in range(len(num_neurons)):
     accuracy = tf.reduce_mean(tf.cast(tf.equal(prediction,tf.argmax(targets_ph,1)),dtype=tf.float32))
 
     # Optimizer to minimize loss. Could try different optimizer as well as varying the learning rate
-    optimizer = tf.train.GradientDescentOptimizer(LEARN_RATE).minimize(loss, var_list=[w1,b1,w2,b2])
+    optimizer = tf.train.GradientDescentOptimizer(LEARN_RATE).minimize(loss, var_list=[w1,b1,w2,b2,w3,b3])
 
     ############### Training / Validation Loop ################
 
@@ -105,7 +109,7 @@ for iteration in range(len(num_neurons)):
 for lst in master_accuracy_lst:
     plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))
     print(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
-    with open('log.out','a') as logfile:
+    with open('artificial/log.out','a') as logfile:
         logfile.write(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '\n')
 
 plt.xlabel('Epoch #')

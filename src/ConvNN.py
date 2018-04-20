@@ -21,7 +21,7 @@ NUM_FILTERS2 = 64
 DROP_RATE = 0.5
 SMOOTHING_WINDOW = 30
 master_accuracy_lst = []
-num_neurons = [10,20,40,80]
+num_neurons = [40]
 
 trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
 trainDat = trainDat.reshape([trainDat.shape[0],imgWidth,imgWidth,1])
@@ -118,6 +118,9 @@ for iteration in range(len(num_neurons)):
     # Optimizer to minimize loss. Could try different optimizer as well as varying the learning rate
     optimizer = tf.train.AdamOptimizer(LEARN_RATE).minimize(loss, var_list=[conv_w1, conv_b1, conv_w2, conv_b2,w1,b1,w2,b2,w3,b3])
 
+    # Model Saver
+    saver = tf.train.Saver()
+
         ############### Training / Validation Loop ################
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -131,10 +134,11 @@ for iteration in range(len(num_neurons)):
             if (i > 5*SMOOTHING_WINDOW):
                 if nnh.finished_training(accuracy_lst,SMOOTHING_WINDOW) == True:
                     break
+            save_path = saver.save(sess, ("model/model_conv_" + str(layer1_size) + "Neur_2Layer.ckpt"))
 
     master_accuracy_lst.append((layer1_size,accuracy_lst))
     print(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a))
-
+    save_path = saver.save(sess, ("model/model_conv_" + str(layer1_size) + "Neur_2Layer.ckpt"))
 
 for lst in master_accuracy_lst:
     plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))

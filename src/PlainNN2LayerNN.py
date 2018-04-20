@@ -14,7 +14,7 @@ BATCH_SIZE = 64
 LEARN_RATE = 0.0001
 SMOOTHING_WINDOW = 10 # Number of previous epoch accuracies to consider when deciding whether to stop
 master_accuracy_lst = [] # This will store the accuracy at each epoch
-num_neurons = [100, 200, 400, 800, 1600]# [50, 100, 200, 400, 800]
+num_neurons = [400]# [50, 100, 200, 400, 800]
 
 # Load Data
 trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
@@ -87,6 +87,9 @@ for iteration in range(len(num_neurons)):
     # Optimizer to minimize loss. Could try different optimizer as well as varying the learning rate
     optimizer = tf.train.AdamOptimizer(LEARN_RATE).minimize(loss, var_list=[w1,b1,w2,b2,w3,b3])
 
+    # Model Saver
+    saver = tf.train.Saver()
+
     ############### Training / Validation Loop ################
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -100,13 +103,15 @@ for iteration in range(len(num_neurons)):
             if (i > 5*SMOOTHING_WINDOW):
                 if nnh.finished_training(accuracy_lst,SMOOTHING_WINDOW) == True:
                     break
+        save_path = saver.save(sess, ("model/model_plain_" + str(layer1_size) + "Neur_2Layer.ckpt"))
+
     master_accuracy_lst.append((layer1_size,accuracy_lst))
     print(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a))
 
 for lst in master_accuracy_lst:
     plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))
     print(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
-    with open('log.out','a') as logfile:
+    with open('2L_log.out','a') as logfile:
         logfile.write(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '\n')
 plt.xlabel('Epoch #')
 plt.ylabel('Accuracy %')
