@@ -177,7 +177,8 @@ def SVMModel_linear():
 def SVMModel_rbf():
     return svm.SVC(kernel='rbf', C=1000, gamma = 1)
 
-
+def SVMModel_LinearSVC():
+    return svm.LinearSVC()
 
 # In[13]:
 
@@ -193,8 +194,8 @@ def NNModel(modelType):
 
 # In[ ]:
 
-#model_list = [KNNModel, NBModel, SVMModel_linear, SVMModel_rbf]
-model_list = [SVMModel_linear, SVMModel_rbf]
+model_list = [KNNModel, NBModel, SVMModel_LinearSVC, SVMModel_linear, SVMModel_rbf]
+
 for m in model_list:
     runOnModelAndData(m, EMtrainDat, EMtestDat, EMtrainLabels, EMtestLabels)
 

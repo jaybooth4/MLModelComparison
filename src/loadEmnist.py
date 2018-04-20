@@ -6,6 +6,7 @@ enumToChar = {0:'0',1:'1',2:'2',3 :'3',4 :'4',5 :'5',6 :'6',7 :'7',8 :'8',9 :'9'
 21 :'L',22 :'M',23 :'N',24 :'O',25 :'P',26 :'Q',27 :'R',28 :'S',29 :'T',30 :'U',31 :'V',32 :'W',33 :'X',34 :'Y',35 :'Z',36 :'a',37 :'b',38 :'d',39 :'e',40 :'f',41 :'g',42 :'h',43 :'n',44 :'q',45 :'r',46 :'t'
 }
 
+charToEnum = dict((v,k) for k,v in enumToChar.items())
 def loadEmnistDatasetFromCSV(filename, imageCount, rowLength):
     data = np.ndarray(shape=(imageCount,rowLength*rowLength), dtype = int)
     labels = np.ndarray(imageCount)

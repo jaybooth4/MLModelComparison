@@ -6,8 +6,11 @@ __pycache__/
 *.csv
 
 # .npy data (still too big for github, zip it)
-*.npy
+data/MNIST/*.npy
+data/EMNIST/*.npy
 
 src/event*
+
+plots/
 
 
