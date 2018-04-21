@@ -19,7 +19,7 @@ FILTER_SIZE2 = 5
 NUM_FILTERS1 = 32
 NUM_FILTERS2 = 64
 DROP_RATE = 0.5
-SMOOTHING_WINDOW = 30
+SMOOTHING_WINDOW = 25
 master_accuracy_lst = []
 num_neurons = [40]
 
@@ -135,10 +135,11 @@ for iteration in range(len(num_neurons)):
                 if nnh.finished_training(accuracy_lst,SMOOTHING_WINDOW) == True:
                     break
             save_path = saver.save(sess, ("model/model_conv_" + str(layer1_size) + "Neur_2Layer.ckpt"))
-
+            with open('2L_Conv_log.out','a') as logfile:
+                logfile.write(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '\n')
     master_accuracy_lst.append((layer1_size,accuracy_lst))
-    print(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a))
-    save_path = saver.save(sess, ("model/model_conv_" + str(layer1_size) + "Neur_2Layer.ckpt"))
+    with open('2L_Conv_log.out','a') as logfile:
+        logfile.write(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a)+ '\n')
 
 for lst in master_accuracy_lst:
     plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))
