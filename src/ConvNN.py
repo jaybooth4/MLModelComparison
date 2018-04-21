@@ -6,10 +6,11 @@ import tensorflow as tf
 import random
 import NN_Helpers as nnh
 import matplotlib.pyplot as plt
+import time
 
 imgWidth = 28
 num_classes = len(loadEmnist.enumToChar)
-EPOCHS = 500
+EPOCHS = 10# 500
 BATCH_SIZE = 64
 LEARN_RATE = 0.0001
 FILTER_SIZE = 5
@@ -21,7 +22,7 @@ NUM_FILTERS2 = 64
 DROP_RATE = 0.5
 SMOOTHING_WINDOW = 40
 master_accuracy_lst = []
-num_neurons = [10,20,40,80]
+num_neurons = [2,5] #[10,20,40,80]
 
 trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
 trainDat = trainDat.reshape([trainDat.shape[0],imgWidth,imgWidth,1])
@@ -59,6 +60,7 @@ def max_pool_NxN(x,reduction_factor):
 
 
 for iteration in range(len(num_neurons)):
+    start_time = time.time()
     accuracy_lst = [] # this will store the accuracy at each epoch
 
     layer1_size = num_neurons[iteration]
@@ -118,6 +120,9 @@ for iteration in range(len(num_neurons)):
     # Optimizer to minimize loss. Could try different optimizer as well as varying the learning rate
     optimizer = tf.train.AdamOptimizer(LEARN_RATE).minimize(loss, var_list=[conv_w1, conv_b1, conv_w2, conv_b2,w1,b1,w2,b2,w3,b3])
 
+    # Saver
+    saver = tf.train.Saver()
+   
         ############### Training / Validation Loop ################
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -133,8 +138,10 @@ for iteration in range(len(num_neurons)):
             if (i > 5*SMOOTHING_WINDOW):
                 if nnh.finished_training(accuracy_lst,SMOOTHING_WINDOW) == True:
                     break
-
-    master_accuracy_lst.append((layer1_size,accuracy_lst))
+        save_path = saver.save(sess, ('model/model_conv_' + str(layer1_size) + 'Neur_2Layer.ckpt'))
+    end_time = time.time()
+    train_time = end_time - start_time
+    master_accuracy_lst.append((layer1_size,accuracy_lst,train_time))
     print(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a))
 
 
@@ -142,7 +149,7 @@ for lst in master_accuracy_lst:
     plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))
     print(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
     with open('2L_Conv_log.out','a') as logfile:
-        logfile.write(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '\n')
+        logfile.write('\n'+str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '.  Train Time: ' + str(lst[2]) + '\n')
 plt.xlabel('Epoch ')
 plt.ylabel('Accuracy %')
 plt.title('Training Curves')
