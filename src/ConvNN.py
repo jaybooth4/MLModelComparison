@@ -10,7 +10,7 @@ import time
 
 imgWidth = 28
 num_classes = len(loadEmnist.enumToChar)
-EPOCHS = 10# 500
+EPOCHS = 500
 BATCH_SIZE = 64
 LEARN_RATE = 0.0001
 FILTER_SIZE = 5
@@ -22,7 +22,7 @@ NUM_FILTERS2 = 64
 DROP_RATE = 0.5
 SMOOTHING_WINDOW = 40
 master_accuracy_lst = []
-num_neurons = [2,5] #[10,20,40,80]
+num_neurons = [10,20,40,80]
 
 trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
 trainDat = trainDat.reshape([trainDat.shape[0],imgWidth,imgWidth,1])
