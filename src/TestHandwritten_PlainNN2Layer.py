@@ -91,6 +91,7 @@ saver = tf.train.Saver()
 
 with tf.Session() as sess:
     saver.restore(sess, ("model/model_plain_" + str(layer1_size) + "Neur_2Layer.ckpt"))
+    testAcc = sess.run([accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels})
     l,pred,a = sess.run([loss,prediction,accuracy], feed_dict={inputs_ph: handwrittenDat, targets_ph: handwrittenLabelsOneHot})
 
 for i in range(handwrittenDat.shape[0]):
@@ -99,4 +100,6 @@ for i in range(handwrittenDat.shape[0]):
     print('\nTrue character: ' + loadEmnist.enumToChar[target] + ' is displayed below.   NN Prediction: ' + loadEmnist.enumToChar[p])
     loadEmnist.printImg(handwrittenDat[i],28,0.25)
 
+print('\nTestdat accuracy' + str(testAcc))
+print('\nHandwritten accuracy: ' + str(a))
 
