@@ -104,8 +104,9 @@ for iteration in range(len(num_neurons)):
             for j in range(0,trainDataSize,BATCH_SIZE):
                 _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]]} ) 
             l,a = sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels})
-            print('EPOCH ' + str(i) + ": "+ str(a))
-            accuracy_lst.append(acc)
+            with open('L2_log.out','a') as logfile:
+                logfile.write('\n\tEPOCH ' + str(i) + ": Loss = " + str(l) + "  Accuracy = "+ str(a))
+            accuracy_lst.append(a)
             if (i > 5*SMOOTHING_WINDOW):
                 if nnh.finished_training(accuracy_lst,SMOOTHING_WINDOW) == True:
                     break
