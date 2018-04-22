@@ -5,10 +5,10 @@ import random
 import NN_Helpers as nnh
 import matplotlib.pyplot as plt
 
+from spamTextParser import bagOfWordsParser
+
 imgWidth = 28
 #layer1_size = 10
-num_classes = len(loadEmnist.enumToChar)
-print(str(num_classes) + ' classes')
 EPOCHS = 1000
 BATCH_SIZE = 64
 LEARN_RATE = 0.0001
@@ -16,13 +16,33 @@ SMOOTHING_WINDOW = 10 # Number of previous epoch accuracies to consider when dec
 master_accuracy_lst = [] # This will store the accuracy at each epoch
 num_neurons = [400]# [50, 100, 200, 400, 800]
 
+dataSet = "EMNIST"
+dataSet = "SPAM"
+
 # Load Data
-trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
-trainLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-labels.npy')
-trainLabels = np.eye(num_classes,dtype=float)[trainLabels.astype(int)]
-testDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-data.npy')
-testLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-labels.npy')
-testLabels = np.eye(num_classes,dtype=float)[testLabels.astype(int)]
+
+if dataSet == "EMNIST":
+    num_classes = len(loadEmnist.enumToChar)
+    print(str(num_classes) + ' classes')
+    trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
+    trainLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-labels.npy')
+    trainLabels = np.eye(num_classes,dtype=float)[trainLabels.astype(int)]
+    testDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-data.npy')
+    testLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-labels.npy')
+    testLabels = np.eye(num_classes,dtype=float)[testLabels.astype(int)]
+elif dataSet == "SPAM":
+    num_classes = 2
+    trainLabels, trainDat, testLabels, testDat = \
+             bagOfWordsParser('../data/SPAM/SMSSpamCollection', 0.8)
+
+    trainLabels = np.eye(num_classes,dtype=float)[trainLabels.astype(int)]
+    testLabels = np.eye(num_classes,dtype=float)[testLabels.astype(int)]
+
+print("Shape of training labels: ", trainLabels.shape)
+print("Shape of training data: ", trainDat.shape)
+print("Shape of testing labels: ", testLabels.shape)
+print("Shape of testing data: ", testDat.shape)
+print("Total number of samples: ", trainDat.shape[1])
 
 trainDataSize = trainDat.shape[0]
 
@@ -45,7 +65,7 @@ for iteration in range(len(num_neurons)):
 
     ############### Placeholders ##############################
     #  We will feed these with inputs at train/test timeinputs_ph = tf.placeholder(tf.float32, shape=[None,imgWidth*imgWidth]) # [784,]
-    inputs_ph = tf.placeholder(tf.float32, shape=[None,imgWidth*imgWidth])
+    inputs_ph = tf.placeholder(tf.float32, shape=[None,trainDat.shape[1]])
     targets_ph = tf.placeholder(tf.float32, shape=[None,num_classes])
 
     ############### Tensorflow Variables ######################
@@ -92,6 +112,7 @@ for iteration in range(len(num_neurons)):
 
     ############### Training / Validation Loop ################
     with tf.Session() as sess:
+        print("Starting Session")
         sess.run(tf.global_variables_initializer())
         for i in range(EPOCHS):
             index = random.sample(range(trainDataSize),k=trainDataSize)
