@@ -175,7 +175,7 @@ def SVMModel_linear():
     return svm.SVC(kernel='linear')
 
 def SVMModel_rbf():
-    return svm.SVC(kernel='rbf', C=1000, gamma = 1, max_iter = 1000)
+    return svm.SVC(kernel='rbf', max_iter = 1000)
 
 def SVMModel_LinearSVC():
     return svm.LinearSVC(max_iter = 5000)
