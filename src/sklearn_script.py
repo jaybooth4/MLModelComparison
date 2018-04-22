@@ -6,6 +6,10 @@
 import csv
 import numpy as np
 import os, zipfile
+from spamTextParser import bagOfWordsParser
+
+# dataSet = "EMNIST"
+dataSet = "SPAM"
 
 enumToChar = {0:'0',1:'1',2:'2',3 :'3',4 :'4',5 :'5',6 :'6',7 :'7',8 :'8',9 :'9',10: 'A',11: 'B',12: 'C',13: 'D',14: 'E',15: 'F',16: 'G',17: 'H',18 :'I',19 :'J',20 :'K',
 21 :'L',22 :'M',23 :'N',24 :'O',25 :'P',26 :'Q',27 :'R',28 :'S',29 :'T',30 :'U',31 :'V',32 :'W',33 :'X',34 :'Y',35 :'Z',36 :'a',37 :'b',38 :'d',39 :'e',40 :'f',41 :'g',42 :'h',43 :'n',44 :'q',45 :'r',46 :'t'
@@ -66,35 +70,45 @@ def printImg(data,rowSize,thresh):
     render += '\n'
     print(render)
 
+if dataSet == "EMNIST":
+    # In[17]:
 
-# In[17]:
+    # Read in EMNIST test dataset from CSV
+    # testDat: np.ndarray[18800][28*28]
+    # testLabels: np.ndarray[18800]
+    #testDat, testLabels = loadEmnist.loadEmnistDataset('../data/EMNIST/emnist-balanced-test.csv',18800,28)
+
+    # Read in EMNIST train data from .npy
+    EMtrainDat = loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
+    EMtrainLabels = loadEmnistFromNPY('../data/EMNIST/balanced-train-labels.npy')
+
+    # Read in EMNIST train dataset from CSV
+    # testDat: np.ndarray[112800][28*28]
+    # testLabels: np.ndarray[112800]
+    # trainDat, trainLabels = loadEmnist.loadEmnistDataset('../data/EMNIST/emnist-balanced-train.csv', 112800,28)
+
+    # Read in EMNIST test data from .npy
+    EMtestDat = loadEmnistFromNPY('../data/EMNIST/balanced-test-data.npy')
+    EMtestLabels = loadEmnistFromNPY('../data/EMNIST/balanced-test-labels.npy')
+
+    RSelect=np.random.choice(112800,100)
+    SampleData = np.zeros((100,784))
+    count =0
+    for index in RSelect:
+        SampleData[count]=EMtrainDat[index]
+        count = count+1
 
 
-# Read in EMNIST test dataset from CSV
-# testDat: np.ndarray[18800][28*28]
-# testLabels: np.ndarray[18800]
-#testDat, testLabels = loadEmnist.loadEmnistDataset('../data/EMNIST/emnist-balanced-test.csv',18800,28)
+elif dataSet == "SPAM":
+    num_classes = 2
+    EMtrainLabels, EMtrainDat, EMtestLabels, EMtestDat = \
+             bagOfWordsParser('../data/SPAM/SMSSpamCollection', 0.8)
 
-# Read in EMNIST train data from .npy
-EMtrainDat = loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
-EMtrainLabels = loadEmnistFromNPY('../data/EMNIST/balanced-train-labels.npy')
-
-# Read in EMNIST train dataset from CSV
-# testDat: np.ndarray[112800][28*28]
-# testLabels: np.ndarray[112800]
-# trainDat, trainLabels = loadEmnist.loadEmnistDataset('../data/EMNIST/emnist-balanced-train.csv', 112800,28)
-
-# Read in EMNIST test data from .npy
-EMtestDat = loadEmnistFromNPY('../data/EMNIST/balanced-test-data.npy')
-EMtestLabels = loadEmnistFromNPY('../data/EMNIST/balanced-test-labels.npy')
-
-
-RSelect=np.random.choice(112800,100)
-SampleData = np.zeros((100,784))
-count =0
-for index in RSelect:
-    SampleData[count]=EMtrainDat[index]
-    count = count+1
+    # EMtrainLabels = np.eye(num_classes,dtype=float)[EMtrainLabels.astype(int)]
+    # EMtestLabels = np.eye(num_classes,dtype=float)[EMtestLabels.astype(int)]
+else:
+    print("Dataset unsupported!")
+    exit()
 
 
 
@@ -194,7 +208,7 @@ def NNModel(modelType):
 
 # In[ ]:
 
-model_list = [SVMModel_LinearSVC, SVMModel_rbf]
+model_list = [SVMModel_rbf, SVMModel_LinearSVC]
 
 for m in model_list:
     runOnModelAndData(m, EMtrainDat, EMtestDat, EMtrainLabels, EMtestLabels)
