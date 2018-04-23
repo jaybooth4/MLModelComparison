@@ -20,7 +20,7 @@ FILTER_SIZE2 = 5
 NUM_FILTERS1 = 32
 NUM_FILTERS2 = 64
 DROP_RATE = 0.5
-SMOOTHING_WINDOW = 40
+SMOOTHING_WINDOW = 20
 master_accuracy_lst = []
 num_neurons = [10,20,40,80]
 
@@ -132,7 +132,7 @@ for iteration in range(len(num_neurons)):
             for j in range(0,trainDataSize,BATCH_SIZE):
                 _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]], retain_prob: 1-DROP_RATE} ) 
             l,a = sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels, retain_prob: 1.0})
-            accuracy_lst.append(acc)
+            accuracy_lst.append(a)
             with open('2L_Conv_log.out','a') as logfile:
                 logfile.write('\nEpoch ' + str(i) + ': Loss: ' + str(l) + ' Accuracy: ' + str(a))
             if (i > 5*SMOOTHING_WINDOW):

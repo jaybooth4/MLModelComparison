@@ -15,7 +15,7 @@ print(str(num_classes) + ' classes')
 EPOCHS = 1000
 BATCH_SIZE = 64
 LEARN_RATE = 0.0001
-SMOOTHING_WINDOW = 10 # Number of previous epoch accuracies to consider when deciding whether to stop
+SMOOTHING_WINDOW = 20 # Number of previous epoch accuracies to consider when deciding whether to stop
 master_accuracy_lst = [] # This will store the accuracy at each epoch
 num_neurons = [100, 200, 400, 800] # [50, 100, 200, 400, 800]
 
@@ -104,8 +104,10 @@ for iteration in range(len(num_neurons)):
             for j in range(0,trainDataSize,BATCH_SIZE):
                 _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]]} ) 
             l,a = sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels})
+            with open('L2_log.out','a') as logfile:
+                logfile.write('\nEPOCH ' + str(i) + ": Accuracy = " + str(a))
             print('EPOCH ' + str(i) + ": "+ str(a))
-            accuracy_lst.append(acc)
+            accuracy_lst.append(a)
             if (i > 5*SMOOTHING_WINDOW):
                 if nnh.finished_training(accuracy_lst,SMOOTHING_WINDOW) == True:
                     break
