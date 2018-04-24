@@ -1,0 +1,16 @@
+# Byte-comiled
+__pycache__/
+*.py[cod]
+
+# .csv data (too big for github, use binaries instead)
+*.csv
+
+# .npy data (still too big for github, zip it)
+data/MNIST/*.npy
+data/EMNIST/*.npy
+
+src/event*
+
+plots/
+
+
