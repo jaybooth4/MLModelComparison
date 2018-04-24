@@ -6,6 +6,7 @@ import tensorflow as tf
 import random
 import NN_Helpers as nnh
 import matplotlib.pyplot as plt
+import time
 
 imgWidth = 28
 num_classes = len(loadEmnist.enumToChar)
@@ -19,9 +20,9 @@ FILTER_SIZE2 = 5
 NUM_FILTERS1 = 32
 NUM_FILTERS2 = 64
 DROP_RATE = 0.5
-SMOOTHING_WINDOW = 25
+SMOOTHING_WINDOW = 20
 master_accuracy_lst = []
-num_neurons = [40]
+num_neurons = [10,20,40,80]
 
 trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
 trainDat = trainDat.reshape([trainDat.shape[0],imgWidth,imgWidth,1])
@@ -59,6 +60,7 @@ def max_pool_NxN(x,reduction_factor):
 
 
 for iteration in range(len(num_neurons)):
+    start_time = time.time()
     accuracy_lst = [] # this will store the accuracy at each epoch
 
     layer1_size = num_neurons[iteration]
@@ -118,9 +120,9 @@ for iteration in range(len(num_neurons)):
     # Optimizer to minimize loss. Could try different optimizer as well as varying the learning rate
     optimizer = tf.train.AdamOptimizer(LEARN_RATE).minimize(loss, var_list=[conv_w1, conv_b1, conv_w2, conv_b2,w1,b1,w2,b2,w3,b3])
 
-    # Model Saver
+    # Saver
     saver = tf.train.Saver()
-
+   
         ############### Training / Validation Loop ################
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -130,23 +132,25 @@ for iteration in range(len(num_neurons)):
             for j in range(0,trainDataSize,BATCH_SIZE):
                 _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]], retain_prob: 1-DROP_RATE} ) 
             l,a = sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels, retain_prob: 1.0})
-            accuracy_lst.append(acc)
+            accuracy_lst.append(a)
+            with open('2L_Conv_log.out','a') as logfile:
+                logfile.write('\nEpoch ' + str(i) + ': Loss: ' + str(l) + ' Accuracy: ' + str(a))
             if (i > 5*SMOOTHING_WINDOW):
                 if nnh.finished_training(accuracy_lst,SMOOTHING_WINDOW) == True:
                     break
-            save_path = saver.save(sess, ("model/model_conv_" + str(layer1_size) + "Neur_2Layer.ckpt"))
-            with open('2L_Conv_log.out','a') as logfile:
-                logfile.write(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '\n')
-    master_accuracy_lst.append((layer1_size,accuracy_lst))
-    with open('2L_Conv_log.out','a') as logfile:
-        logfile.write(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a)+ '\n')
+        save_path = saver.save(sess, ('model/model_conv_' + str(layer1_size) + 'Neur_2Layer.ckpt'))
+    end_time = time.time()
+    train_time = end_time - start_time
+    master_accuracy_lst.append((layer1_size,accuracy_lst,train_time))
+    print(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a))
+
 
 for lst in master_accuracy_lst:
     plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))
     print(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
     with open('2L_Conv_log.out','a') as logfile:
-        logfile.write(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '\n')
-plt.xlabel('Epoch #')
+        logfile.write('\n'+str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '.  Train Time: ' + str(lst[2]) + '\n')
+plt.xlabel('Epoch ')
 plt.ylabel('Accuracy %')
 plt.title('Training Curves')
 plt.legend(loc='lower right')
