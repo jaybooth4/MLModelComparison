@@ -13,8 +13,6 @@ num_classes = len(loadEmnist.enumToChar)
 EPOCHS = 500
 BATCH_SIZE = 64
 LEARN_RATE = 0.0001
-FILTER_SIZE = 5
-NUM_FILTERS = 32
 FILTER_SIZE1 = 5
 FILTER_SIZE2 = 5
 NUM_FILTERS1 = 32
@@ -22,7 +20,7 @@ NUM_FILTERS2 = 64
 DROP_RATE = 0.5
 SMOOTHING_WINDOW = 20
 master_accuracy_lst = []
-num_neurons = [10,20,40,80]
+num_neurons = [1,2,4,80]
 
 # load data
 trainDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-train-data.npy')
@@ -57,7 +55,7 @@ def max_pool_NxN(x,reduction_factor):
 
 # Test all the layer sizes in num_neurons
 for iteration in range(len(num_neurons)):
-    tf.reset_default_graph()
+    tf.reset_default_graph()  # Reset graph so we can save multiple models
 
     start_time = time.time()
     accuracy_lst = [] # this will store the accuracy at each epoch
@@ -124,23 +122,30 @@ for iteration in range(len(num_neurons)):
    
     ############### Training / Validation Loop ################
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.global_variables_initializer()) # init variables
+        ## Iterate over max number of epochs
         for i in range(EPOCHS):
             print('EPOCH ' + str(i))
-            index = random.sample(range(trainDataSize),k=trainDataSize)
+            index = random.sample(range(trainDataSize),k=trainDataSize) ## Shuffle the order for batch optimization
+            ## Run epoch of training in chunks of length BATCH_SIZE
             for j in range(0,trainDataSize,BATCH_SIZE):
+                ## Train on training dataset
                 _,acc = sess.run([optimizer,accuracy], feed_dict={inputs_ph: trainDat[index[j:min(j+BATCH_SIZE,trainDataSize-1)]],   targets_ph: trainLabels[index[j:min(j+BATCH_SIZE,trainDataSize-1)]], retain_prob: 1-DROP_RATE} ) 
+            ## Test on test dataset
             test_start = time.time()
             l,a = sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels, retain_prob: 1.0})
             test_stop = time.time()
+            ## Log results
             accuracy_lst.append(a)
             with open('2L_Conv_log.out','a') as logfile:
                 logfile.write('\nEpoch ' + str(i) + ':  Time to Test: ' + str(test_stop - test_start) + '  Loss: ' + str(l) + '  Accuracy: ' + str(a))
+            ## Early Stopping: let run for 5*SMOOTHING_WINDOW epochs, then stop when test accuracy stops increasing
             if (i > 5*SMOOTHING_WINDOW):
                 if nnh.finished_training(accuracy_lst,SMOOTHING_WINDOW) == True:
                     break
+        ## Save model
         save_path = saver.save(sess, ('model/model_conv_' + str(layer1_size) + 'Neur_2Layer.ckpt'))
-    end_time = time.time()
+    end_time = time.time() # Time training
     train_time = end_time - start_time
     master_accuracy_lst.append((layer1_size,accuracy_lst,train_time))
     print(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a))
@@ -157,4 +162,4 @@ plt.ylabel('Accuracy %')
 plt.title('Training Curves')
 plt.legend(loc='lower right')
 plt.savefig('2L_Conv_train_plot.png')
-plt.show()
+#plt.show()
