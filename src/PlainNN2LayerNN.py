@@ -31,9 +31,10 @@ if dataSet == "EMNIST":
     testLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-labels.npy')
     testLabels = np.eye(num_classes,dtype=float)[testLabels.astype(int)]
 elif dataSet == "SPAM":
+    # Read in SPAM dataset
     num_classes = 2
     trainLabels, trainDat, testLabels, testDat = \
-             bagOfWordsParser('../data/SPAM/SMSSpamCollection', 0.8)
+             bagOfWordsParser('../data/SPAM/SMSSpamCollection', 0.2)
     trainLabels = np.eye(num_classes,dtype=float)[trainLabels.astype(int)]
     testLabels = np.eye(num_classes,dtype=float)[testLabels.astype(int)]
 

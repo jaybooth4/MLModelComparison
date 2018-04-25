@@ -100,12 +100,10 @@ if dataSet == "EMNIST":
 
 
 elif dataSet == "SPAM":
+    # Read in SPAM dataset
     num_classes = 2
     EMtrainLabels, EMtrainDat, EMtestLabels, EMtestDat = \
-             bagOfWordsParser('../data/SPAM/SMSSpamCollection', 0.8)
-
-    # EMtrainLabels = np.eye(num_classes,dtype=float)[EMtrainLabels.astype(int)]
-    # EMtestLabels = np.eye(num_classes,dtype=float)[EMtestLabels.astype(int)]
+             bagOfWordsParser('../data/SPAM/SMSSpamCollection', 0.2)
 else:
     print("Dataset unsupported!")
     exit()
