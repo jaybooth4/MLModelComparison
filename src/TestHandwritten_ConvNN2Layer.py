@@ -19,14 +19,13 @@ NUM_FILTERS2 = 64
 DROP_RATE = 0.5
 SMOOTHING_WINDOW = 25
 master_accuracy_lst = []
-num_neurons = [40]
+num_neurons = [80]
+
+
 testDat = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-data.npy')
-#testDat = testDat*255
 testDat = testDat.astype(int)
 testDat = testDat.reshape([testDat.shape[0],imgWidth,imgWidth,1])
-    #testDat = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-test-data.npy')
 testLabels = loadEmnist.loadEmnistFromNPY('../data/EMNIST/balanced-test-labels.npy')
-    #testLabels = loadEmnist.loadEmnistFromNPY('../data/MNIST/MNIST-test-labels.npy')
 testLabels = np.eye(num_classes,dtype=float)[testLabels.astype(int)]
 
 handwrittenDat = loadEmnist.loadEmnistFromNPY('../data/handwritten/binaryLetters.npy')

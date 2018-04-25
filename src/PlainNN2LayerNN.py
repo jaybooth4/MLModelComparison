@@ -1,26 +1,26 @@
+import matplotlib
+#matplotlib.use('Agg')  # Uncomment for Cloud Computing
 import loadEmnist
 import numpy as np
 import tensorflow as tf
 import random
 import NN_Helpers as nnh
 import matplotlib.pyplot as plt
-
+import time
 from spamTextParser import bagOfWordsParser
 
 imgWidth = 28
-#layer1_size = 10
 EPOCHS = 1000
 BATCH_SIZE = 64
 LEARN_RATE = 0.0001
-SMOOTHING_WINDOW = 10 # Number of previous epoch accuracies to consider when deciding whether to stop
+SMOOTHING_WINDOW = 15 # Number of previous epoch accuracies to consider when deciding whether to stop
 master_accuracy_lst = [] # This will store the accuracy at each epoch
-num_neurons = [400]# [50, 100, 200, 400, 800]
+num_neurons = [100, 200, 400, 800]
 
 dataSet = "EMNIST"
-dataSet = "SPAM"
+#dataSet = "SPAM"
 
 # Load Data
-
 if dataSet == "EMNIST":
     num_classes = len(loadEmnist.enumToChar)
     print(str(num_classes) + ' classes')
@@ -34,7 +34,6 @@ elif dataSet == "SPAM":
     num_classes = 2
     trainLabels, trainDat, testLabels, testDat = \
              bagOfWordsParser('../data/SPAM/SMSSpamCollection', 0.8)
-
     trainLabels = np.eye(num_classes,dtype=float)[trainLabels.astype(int)]
     testLabels = np.eye(num_classes,dtype=float)[testLabels.astype(int)]
 
@@ -43,7 +42,6 @@ print("Shape of training data: ", trainDat.shape)
 print("Shape of testing labels: ", testLabels.shape)
 print("Shape of testing data: ", testDat.shape)
 print("Total number of samples: ", trainDat.shape[1])
-
 trainDataSize = trainDat.shape[0]
 
 # Function to generate tensorflow weight variable
@@ -57,12 +55,19 @@ def bias_var(shape):
     initial_vals = tf.zeros(shape)
     return tf.Variable(initial_vals)
 
-
+# Test all the layer sizes in num_neurons
 for iteration in range(len(num_neurons)):
+    tf.reset_default_graph()
+    
+    train_start = time.time()
     accuracy_lst = [] # this will store the accuracy at each epoch
 
     layer1_size = num_neurons[iteration]
 
+    ## Log current iteration
+    with open('2L_Plain_log.out','a') as logfile:
+        logfile.write('\n1 Layer of '+str(layer1_size) + ' Neurons. Learn Rate: ' + str(LEARN_RATE))
+    print('\n1 Layer of '+str(layer1_size) + ' Neurons. Learn Rate: ' + str(LEARN_RATE))
     ############### Placeholders ##############################
     #  We will feed these with inputs at train/test timeinputs_ph = tf.placeholder(tf.float32, shape=[None,imgWidth*imgWidth]) # [784,]
     inputs_ph = tf.placeholder(tf.float32, shape=[None,trainDat.shape[1]])
@@ -121,22 +126,27 @@ for iteration in range(len(num_neurons)):
             l,a = sess.run([loss,accuracy], feed_dict={inputs_ph: testDat, targets_ph: testLabels})
             print('EPOCH ' + str(i) + ": "+ str(a))
             accuracy_lst.append(a)
+            with open('2L_Plain_log.out','a') as logfile:
+                logfile.write('\nEpoch ' + str(i) + ': Loss: ' + str(l) + ' Accuracy: ' + str(a))
             if (i > 5*SMOOTHING_WINDOW):
                 if nnh.finished_training(accuracy_lst,SMOOTHING_WINDOW) == True:
                     break
         save_path = saver.save(sess, ("model/model_plain_" + str(layer1_size) + "Neur_2Layer.ckpt"))
 
-    master_accuracy_lst.append((layer1_size,accuracy_lst))
+    train_end = time.time()
+    train_time = train_end - train_start
+    master_accuracy_lst.append((layer1_size,accuracy_lst,train_time))
     print(str(layer1_size) + " Neurons: Final Accuracy after " + str(len(accuracy_lst)) + " Epochs:" + str(a))
 
+    ############### Generate Plots ################
 for lst in master_accuracy_lst:
     plt.plot(range(0,len(lst[1])), lst[1], label=(str(lst[0]) + 'Neuron'))
-    print(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
-    with open('2L_log.out','a') as logfile:
-        logfile.write(str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]) + '\n')
+    print('\n' + str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1]))
+    with open('2L_Plain_log.out','a') as logfile:
+        logfile.write('\n' + str(lst[0]) + ' Neurons: Final Accuracy after ' + str(len(lst[1])) + ' Epochs: ' + str(lst[1][len(lst[1])-1])  + '.  Train Time: ' + str(lst[2]))
 plt.xlabel('Epoch #')
 plt.ylabel('Accuracy %')
 plt.title('Training Curves')
 plt.legend(loc='lower right')
-plt.savefig('train_plot.png')
+plt.savefig('train_plot_2L.png')
 plt.show()
